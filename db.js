@@ -1,4 +1,3 @@
-<script type="text/babel">
 // Dexie database module
 const db = new Dexie("OptionsDashboardDB");
 
@@ -23,6 +22,4 @@ async function getAllTrades() {
   return db.trades.orderBy('entryDate').reverse().toArray();
 }
 
-// Export to global so app.js can use them
 window.DB = { addTradeObj, updateTradeObj, deleteTradeObj, getAllTrades };
-</script>

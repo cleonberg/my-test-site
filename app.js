@@ -1,4 +1,3 @@
-<script type="text/babel">
 // Main app
 const { useState, useEffect } = React;
 
@@ -165,4 +164,3 @@ function App() {
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<App />);
-</script>
