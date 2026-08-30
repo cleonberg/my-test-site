@@ -1,35 +1,193 @@
-:root{
-  --bg:#0f1724;
-  --card:#0b1220;
-  --muted:#9aa4b2;
-  --accent:#06b6d4;
-  --glass: rgba(255,255,255,0.03);
-  --radius:10px;
-  --gap:12px;
-  color-scheme: dark;
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #0b1b3a;
+  color: #f5f7ff;
 }
 
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;background:linear-gradient(180deg,#071021 0%, #081426 100%);color:#e6eef6}
-.topbar{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:space-between}
-.topbar h1{margin:0;font-size:18px}
-.meta{font-size:12px;color:var(--muted)}
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 12px 16px;
+  border-bottom: 1px solid #24345f;
+  background: #0f2145;
+}
 
-.container{padding:16px;max-width:980px;margin:18px auto}
+.app-title {
+  font-size: 20px;
+  font-weight: 600;
+}
 
-.card{background:var(--card);padding:14px;border-radius:var(--radius);box-shadow:0 6px 18px rgba(2,6,23,0.6);margin-bottom:14px}
-.form-row{display:flex;gap:8px;flex-wrap:wrap}
-.input,select,button{padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit}
-.input{min-width:120px}
-button{background:linear-gradient(90deg,var(--accent),#7dd3fc);border:none;color:#042027;cursor:pointer}
-button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
-.table{width:100%;border-collapse:collapse;margin-top:12px}
-.table th,.table td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left;font-size:14px}
-.small{font-size:13px;color:var(--muted)}
-.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.app-subtitle {
+  font-size: 12px;
+  color: #9fb3ff;
+}
 
-@media (max-width:640px){
-  .form-row{flex-direction:column}
-  .input{width:100%}
-  .controls{flex-direction:column;align-items:stretch}
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #24345f;
+  background: #0f2145;
+}
+
+.tab-button {
+  border: none;
+  background: #182a52;
+  color: #cfd8ff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.tab-button.active {
+  background: #3b5bd8;
+  color: #ffffff;
+}
+
+main {
+  padding: 16px;
+}
+
+/* Cards */
+
+.card {
+  background: #111f3f;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #24345f;
+  margin-bottom: 12px;
+}
+
+/* Inputs */
+
+.input {
+  background: #0b1b3a;
+  border: 1px solid #24345f;
+  color: #f5f7ff;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.input::placeholder {
+  color: #6f82c5;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #3b5bd8;
+}
+
+/* Buttons */
+
+button {
+  background: #3b5bd8;
+  border: none;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+button.secondary {
+  background: #182a52;
+  color: #cfd8ff;
+}
+
+/* Form layout */
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.form-row .input {
+  flex: 1 1 120px;
+}
+
+/* Table */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.table th,
+.table td {
+  padding: 6px 4px;
+  border-bottom: 1px solid #24345f;
+}
+
+.table th {
+  text-align: left;
+  color: #9fb3ff;
+}
+
+.table tr:hover {
+  background: #16254a;
+}
+
+/* Small text */
+
+.small {
+  font-size: 11px;
+  color: #9fb3ff;
+}
+
+/* Filters */
+
+.filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.filters-row .input {
+  flex: 1 1 140px;
+}
+
+/* Charts */
+
+.chart-container {
+  background: #111f3f;
+  border-radius: 8px;
+  border: 1px solid #24345f;
+  padding: 8px;
+  margin-bottom: 12px;
+}
+
+/* Settings */
+
+.settings-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.settings-row .input {
+  flex: 1 1 200px;
+}
+
+/* Responsive */
+
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    gap: 4px;
+  }
 }

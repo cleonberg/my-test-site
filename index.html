@@ -1,31 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
   <title>Options Dashboard</title>
-
-  <!-- React + ReactDOM UMD -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-
-  <!-- Babel for JSX in-browser -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Dexie -->
-  <script src="https://unpkg.com/dexie@3/dist/dexie.js"></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="topbar">
-    <h1>Options Dashboard</h1>
-    <div class="meta">Local-only data · Works offline</div>
+  <header class="app-header">
+    <div class="app-title">Options Dashboard</div>
+    <div class="app-subtitle">Local-only data · Works offline</div>
   </header>
 
-  <main id="root" class="container"></main>
+  <nav class="tabs" id="tabs"></nav>
 
-  <!-- App code split for clarity -->
+  <main id="root"></main>
+
+  <!-- React / Babel / Dexie / Plotly -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/dexie@3/dist/dexie.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+
+  <!-- App modules -->
+  <script type="text/babel" src="crypto.js"></script>
+  <script type="text/babel" src="sync.js"></script>
+  <script type="text/babel" src="filters.js"></script>
+  <script type="text/babel" src="charts.js"></script>
   <script type="text/babel" src="db.js"></script>
   <script type="text/babel" src="app.js"></script>
 </body>
