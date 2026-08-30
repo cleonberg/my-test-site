@@ -1,105 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Options Tracker</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Options Dashboard</title>
 
-  <!-- React + ReactDOM -->
+  <!-- React + ReactDOM UMD -->
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 
-  <!-- Babel for JSX -->
+  <!-- Babel for JSX in-browser -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- Dexie -->
   <script src="https://unpkg.com/dexie@3/dist/dexie.js"></script>
 
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    input, select { margin: 5px; padding: 5px; }
-    table { margin-top: 20px; border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 8px; }
-  </style>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <h1>Options Tracker</h1>
-  <div id="root"></div>
+  <header class="topbar">
+    <h1>Options Dashboard</h1>
+    <div class="meta">Local-only data · Works offline</div>
+  </header>
 
-  <script type="text/babel">
-    // --- Dexie Setup ---
-    const db = new Dexie("optionsDB");
-    db.version(1).stores({
-      trades: "++id, ticker, strike, expiry, premium, type"
-    });
+  <main id="root" class="container"></main>
 
-    function App() {
-      const [ticker, setTicker] = React.useState("");
-      const [strike, setStrike] = React.useState("");
-      const [expiry, setExpiry] = React.useState("");
-      const [premium, setPremium] = React.useState("");
-      const [type, setType] = React.useState("PUT");
-      const [trades, setTrades] = React.useState([]);
-
-      React.useEffect(() => {
-        db.trades.toArray().then(setTrades);
-      }, []);
-
-      function addTrade() {
-        db.trades.add({ ticker, strike, expiry, premium, type })
-          .then(() => db.trades.toArray())
-          .then(setTrades);
-
-        setTicker("");
-        setStrike("");
-        setExpiry("");
-        setPremium("");
-      }
-
-      return (
-        <div>
-          <h2>Add Trade</h2>
-          <input placeholder="Ticker" value={ticker} onChange={e => setTicker(e.target.value)} />
-          <input placeholder="Strike" value={strike} onChange={e => setStrike(e.target.value)} />
-          <input type="date" value={expiry} onChange={e => setExpiry(e.target.value)} />
-          <input placeholder="Premium" value={premium} onChange={e => setPremium(e.target.value)} />
-
-          <select value={type} onChange={e => setType(e.target.value)}>
-            <option>PUT</option>
-            <option>CALL</option>
-          </select>
-
-          <button onClick={addTrade}>Add</button>
-
-          <h2>Trades</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Ticker</th>
-                <th>Strike</th>
-                <th>Expiry</th>
-                <th>Premium</th>
-                <th>Type</th>
-              </tr>
-            </thead>
-            <tbody>
-              {trades.map(t => (
-                <tr key={t.id}>
-                  <td>{t.ticker}</td>
-                  <td>{t.strike}</td>
-                  <td>{t.expiry}</td>
-                  <td>{t.premium}</td>
-                  <td>{t.type}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    }
-
-    const root = ReactDOM.createRoot(document.getElementById("root"));
-    root.render(<App />);
-  </script>
+  <!-- App code split for clarity -->
+  <script type="text/babel" src="db.js"></script>
+  <script type="text/babel" src="app.js"></script>
 </body>
 </html>
