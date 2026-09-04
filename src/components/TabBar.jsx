@@ -1,0 +1,24 @@
+import React from "react";
+
+export default function TabBar({ activeTab, setActiveTab }) {
+  const tabs = [
+    { id: "dashboard", label: "Dashboard" },
+    { id: "trades", label: "Trades" },
+    { id: "campaigns", label: "Campaigns" },
+    { id: "settings", label: "Settings" }
+  ];
+
+  return (
+    <div className="tabs">
+      {tabs.map(t => (
+        <button
+          key={t.id}
+          className={`tab-button ${activeTab === t.id ? "active" : ""}`}
+          onClick={() => setActiveTab(t.id)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
+}

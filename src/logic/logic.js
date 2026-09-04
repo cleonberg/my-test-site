@@ -1,0 +1,306 @@
+import dbLocal from "../db/dexie.js";
+
+/* -------------------------------------------------------
+   Formatting Helpers
+------------------------------------------------------- */
+export function fmt(x) {
+  if (x == null || Number.isNaN(x)) return "-";
+  return Number(x).toFixed(2);
+}
+
+export function cashClass(x) {
+  if (x > 0) return "cash-pos";
+  if (x < 0) return "cash-neg";
+  return "cash-zero";
+}
+
+/* -------------------------------------------------------
+   Loaders
+------------------------------------------------------- */
+export async function loadTrades() {
+  return dbLocal.getAllTrades();
+}
+
+export async function loadCampaignsAndLegs() {
+  const campaigns = await dbLocal.getAllCampaigns();
+  const legs = await dbLocal.getAllLegs();
+  return { campaigns, legs };
+}
+
+/* -------------------------------------------------------
+   Per-Leg P/L
+------------------------------------------------------- */
+export function computeLegPL(leg) {
+  if (!leg.closePrice) return 0;
+  return (leg.openPrice - leg.closePrice) * leg.qty;
+}
+
+/* -------------------------------------------------------
+   Group Campaigns
+------------------------------------------------------- */
+export function groupCampaignsByTicker(campaigns) {
+  const groups = {};
+  for (const c of campaigns) {
+    if (!groups[c.ticker]) groups[c.ticker] = [];
+    groups[c.ticker].push(c);
+  }
+  return groups;
+}
+
+/* -------------------------------------------------------
+   Timeline
+------------------------------------------------------- */
+export function getCampaignTimeline(legs) {
+  return legs.map(l => ({
+    id: l.id,
+    label: `${l.type} @ ${l.strike}`,
+    start: l.openDate,
+    end: l.closeDate || new Date().toISOString()
+  }));
+}
+
+/* -------------------------------------------------------
+   Performance Series
+------------------------------------------------------- */
+export function computeCampaignPLSeries(legs) {
+  const events = [];
+
+  for (const l of legs) {
+    if (l.openDate) {
+      events.push({
+        date: l.openDate,
+        pl: -(l.openPrice * l.qty)
+      });
+    }
+    if (l.closeDate) {
+      events.push({
+        date: l.closeDate,
+        pl: l.closePrice * l.qty
+      });
+    }
+  }
+
+  events.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  let cumulative = 0;
+  return events.map(e => {
+    cumulative += e.pl;
+    return { date: e.date.slice(0, 10), cumulative };
+  });
+}
+
+/* -------------------------------------------------------
+   Leg Handlers
+------------------------------------------------------- */
+export async function handleAddLeg(leg) {
+  await dbLocal.addLeg({
+    ...leg,
+    openDate: leg.openDate || new Date().toISOString(),
+    closeDate: leg.closeDate || null
+  });
+}
+
+export async function handleEditLegSubmit(leg) {
+  await dbLocal.updateLeg(leg.id, {
+    ...leg,
+    qty: Number(leg.qty),
+    openPrice: Number(leg.openPrice),
+    closePrice: Number(leg.closePrice || 0)
+  });
+}
+
+export async function handleCloseLeg(leg, closePrice) {
+  await dbLocal.updateLeg(leg.id, {
+    closePrice: Number(closePrice),
+    closeDate: new Date().toISOString(),
+    isOpen: false
+  });
+}
+
+export async function handleRollSubmit(sourceLeg, roll) {
+  // Close old leg
+  await dbLocal.updateLeg(sourceLeg.id, {
+    closePrice: Number(roll.closePrice),
+    closeDate: new Date().toISOString(),
+    isOpen: false
+  });
+
+  // Add new leg
+  await dbLocal.addLeg({
+    campaignId: sourceLeg.campaignId,
+    ticker: sourceLeg.ticker,
+    type: sourceLeg.type,
+    qty: Number(roll.qty),
+    strike: roll.strike,
+    expiry: roll.expiry,
+    openPrice: Number(roll.openPrice),
+    closePrice: 0,
+    isOpen: true,
+    notes: sourceLeg.notes,
+    openDate: new Date().toISOString(),
+    closeDate: null
+  });
+}
+
+/* -------------------------------------------------------
+   Campaign Handlers
+------------------------------------------------------- */
+export async function handleCloseCampaign(campaignId, legs) {
+  const closeDates = legs
+    .filter(l => l.campaignId === campaignId && l.closeDate)
+    .map(l => new Date(l.closeDate));
+
+  const endDate = closeDates.length
+    ? new Date(Math.max(...closeDates)).toISOString()
+    : new Date().toISOString();
+
+  await dbLocal.updateCampaign(campaignId, {
+    status: "closed",
+    endDate
+  });
+}
+
+export async function handleReopenCampaign(campaignId) {
+  await dbLocal.updateCampaign(campaignId, {
+    status: "open",
+    endDate: null
+  });
+}
+
+export async function handleSplitCampaign(campaignId, legs, campaigns, n) {
+  const base = campaigns.find(c => c.id === campaignId);
+  if (!base) return;
+
+  const legsForCampaign = legs.filter(l => l.campaignId === campaignId);
+  const chunkSize = Math.ceil(legsForCampaign.length / n);
+
+  const newIds = [];
+  for (let i = 0; i < n; i++) {
+    const newId = await dbLocal.addCampaign({
+      ticker: base.ticker,
+      status: "open",
+      notes: `${base.notes || ""} (split ${i + 1}/${n})`,
+      tags: base.tags || []
+    });
+    newIds.push(newId);
+  }
+
+  for (let i = 0; i < legsForCampaign.length; i++) {
+    const leg = legsForCampaign[i];
+    const idx = Math.floor(i / chunkSize);
+    const targetId = newIds[Math.min(idx, newIds.length - 1)];
+    await dbLocal.updateLeg(leg.id, { campaignId: targetId });
+  }
+
+  await dbLocal.updateCampaign(campaignId, { status: "closed" });
+}
+
+export async function handleCombineCampaign(ids, campaigns, legs) {
+  const validIds = ids.filter(id => campaigns.some(c => c.id === id));
+  if (validIds.length < 2) return null;
+
+  const base = campaigns.find(c => c.id === validIds[0]);
+
+  const newId = await dbLocal.addCampaign({
+    ticker: base.ticker,
+    status: "open",
+    notes: `${base.notes || ""} (combined ${validIds.join(", ")})`,
+    tags: base.tags || []
+  });
+
+  for (const leg of legs.filter(l => validIds.includes(l.campaignId))) {
+    await dbLocal.updateLeg(leg.id, { campaignId: newId });
+  }
+
+  for (const id of validIds) {
+    await dbLocal.updateCampaign(id, { status: "closed" });
+  }
+
+  return newId;
+}
+
+/* -------------------------------------------------------
+   Campaign Summary
+------------------------------------------------------- */
+export function computeCampaignSummary(campaign, legsForCampaign) {
+  const optionsNet = legsForCampaign
+    .filter(l => l.type.includes("call") || l.type.includes("put"))
+    .reduce(
+      (sum, l) => sum + (l.openPrice - (l.closePrice || 0)) * l.qty,
+      0
+    );
+
+  const stockNet = legsForCampaign
+    .filter(l => l.type.includes("stock"))
+    .reduce(
+      (sum, l) => sum + (l.openPrice - (l.closePrice || 0)) * l.qty,
+      0
+    );
+
+  const openDates = legsForCampaign
+    .filter(l => l.openDate)
+    .map(l => new Date(l.openDate));
+
+  const closeDates = legsForCampaign
+    .filter(l => l.closeDate)
+    .map(l => new Date(l.closeDate));
+
+  const startDate = openDates.length
+    ? new Date(Math.min(...openDates)).toISOString().slice(0, 10)
+    : null;
+
+  const endDate = closeDates.length
+    ? new Date(Math.max(...closeDates)).toISOString().slice(0, 10)
+    : campaign.endDate
+      ? new Date(campaign.endDate).toISOString().slice(0, 10)
+      : null;
+
+  return {
+    optionsNet,
+    stockNet,
+    netCredit: optionsNet + stockNet,
+    legCount: legsForCampaign.length,
+    startDate,
+    endDate
+  };
+}
+
+/* -------------------------------------------------------
+   Dashboard Summary
+------------------------------------------------------- */
+export function computeDashboardSummary(campaigns, legs) {
+  const openLegs = legs.filter(l => l.isOpen);
+  const closedLegs = legs.filter(l => !l.isOpen);
+
+  const optionsNet = legs
+    .filter(l => l.type.includes("call") || l.type.includes("put"))
+    .reduce((sum, l) => sum + (l.openPrice - (l.closePrice || 0)) * l.qty, 0);
+
+  const stockNet = legs
+    .filter(l => l.type.includes("stock"))
+    .reduce((sum, l) => sum + (l.openPrice - (l.closePrice || 0)) * l.qty, 0);
+
+  const netCredit = optionsNet + stockNet;
+
+  const openDates = legs
+    .filter(l => l.openDate)
+    .map(l => new Date(l.openDate));
+
+  const closeDates = legs
+    .filter(l => l.closeDate)
+    .map(l => new Date(l.closeDate));
+
+  return {
+    netCredit,
+    openLegCount: openLegs.length,
+    closedLegCount: closedLegs.length,
+    activeCampaigns: campaigns.filter(c => c.status === "open").length,
+    closedCampaigns: campaigns.filter(c => c.status === "closed").length,
+    earliestOpen: openDates.length
+      ? new Date(Math.min(...openDates)).toISOString().slice(0, 10)
+      : null,
+    latestClose: closeDates.length
+      ? new Date(Math.max(...closeDates)).toISOString().slice(0, 10)
+      : null
+  };
+}
